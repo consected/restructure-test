@@ -1,24 +1,16 @@
 RUBY_V=2.7.5
 GIT_EMAIL=youremail
-BUILD_GIT_BRANCH=new-master
+TEST_GIT_BRANCH=develop
 REPO_URL="https://github.com/somerep"
 DOCS_REPO_URL="https://github.com/somerep_for_docs"
-# If you want to commit the build to a different repo, uncomment and add it here
-# PROD_REPO_URL="https://github.com/prodrepo"
-# To prevent pushing results back to the dev repo too, uncomment this
-# ONLY_PUSH_TO_PROD_REPO=true
-# Only push built assets to the prod repo, cleaning them before
-# pushing to the dev repo. Ignored if ONLY_PUSH_TO_PROD_REPO=true
-ONLY_PUSH_ASSETS_TO_PROD_REPO=true
 
-# Change to 'true' to run rspec tests
-RUN_TESTS=false
-
-DB_NAME=restr_db
-TEST_DB_NAME=${DB_NAME}_test
 DB_USER=$(whoami)
 DB_PASSWORD=root
-DB_DEFAULT_SCHEMA=ml_app
-APP_DB_SEARCH_PATH=ml_app,ref_data
-DUMP_SCHEMAS="ml_app ref_data"
-RSPEC_OPTIONS='--exclude-pattern "**/features/**/*_spec.rb"'
+
+# See geckodriver releases at: https://github.com/mozilla/geckodriver/releases
+GECKODRIVER=https://github.com/mozilla/geckodriver/releases/download/v0.32.0/geckodriver-v0.32.0-linux64.tar.gz
+
+# Uncomment if you want to drop and recreate the test database on startup
+# DROP_DATABASE=true
+# Uncomment if you want to prevent static analysis tests such as brakeman from running
+# NO_BRAKEMAN=true

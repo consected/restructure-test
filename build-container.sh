@@ -1,6 +1,6 @@
 #!/bin/bash
 # Setup the build container with
-#    docker build . --no-cache -t consected/restructure-build
+#    docker build . --no-cache -t consected/restructure-test
 
 # set -xv
 source /shared/build-vars.sh
@@ -13,24 +13,16 @@ yum install -y deltarpm sudo rsync adduser
 yum update
 
 curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
-curl --silent --location https://rpm.nodesource.com/setup_12.x | bash -
+curl --silent --location https://rpm.nodesource.com/setup_14.x | bash -
 
 amazon-linux-extras
-
-# yum install -y https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-latest-x86_64/postgresql10-libs-10.10-1PGDG.rhel7.x86_64.rpm
-# yum install -y https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-latest-x86_64/postgresql10-10.10-1PGDG.rhel7.x86_64.rpm
-# yum install -y https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-latest-x86_64/postgresql10-server-10.10-1PGDG.rhel7.x86_64.rpm
-# yum install -y https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-latest-x86_64/postgresql10-devel-10.10-1PGDG.rhel7.x86_64.rpm
-# yum install -y https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-latest-x86_64/postgresql10-contrib-10.10-1PGDG.rhel7.x86_64.rpm
-
-# yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 
 yum install -y git yarn \
   llvm-toolset-7-clang \
   openssl-devel readline-devel zlib-devel \
   gcc gcc-c++ make which mlocate \
   tar bzip2 \
-  words
+  words procps-ng
 
 amazon-linux-extras enable postgresql${PGVER} vim epel
 yum clean metadata
@@ -52,7 +44,27 @@ psql --version
 sudo -u postgres psql -c 'SELECT version();' 2>&1
 
 # For UI features testing
-# yum install -y firefox Xvfb x11vnc
+amazon-linux-extras install -y epel
+yum install -y bindfs autoconf fuse fuse-libs fuse-devel libarchive libarchive-devel x11vnc Xvfb unzip zip
+modprobe fuse
+amazon-linux-extras install -y firefox
+amazon-linux-extras install -y libreoffice
+yum install -y dcmtk poppler-cpp poppler-cpp-devel netpbm netpbm-progs
+
+pip3 install ocrmypdf
+yum-config-manager --add-repo https://download.opensuse.org/repositories/home:/Alexander_Pozdnyakov/CentOS_7/
+rpm --import https://build.opensuse.org/projects/home:Alexander_Pozdnyakov/public_key
+yum update
+yum install -y tesseract
+yum install -y tesseract-langpack-deu
+
+wget -O geckodriver.tar.gz ${GECKODRIVER}
+tar -xvf geckodriver.tar.gz
+mv geckdriver /bin
+
+# Alternative to x11vnc and Xvfb
+# amazon-linux-extras install -y mate-desktop1.x firefox
+# bash -c 'echo PREFERRED=/usr/bin/mate-session > /etc/sysconfig/desktop'
 
 # Install rbenv
 git clone https://github.com/rbenv/rbenv.git ${HOME}/.rbenv

@@ -8,5 +8,5 @@ COPY shared/.netrc /root/.netrc
 
 RUN cd /root; chmod 600 /root/.netrc; /root/build-container.sh
 
-CMD ["/shared/build-restructure.sh"]
+CMD ["/shared/test-restructure.sh"]
 
