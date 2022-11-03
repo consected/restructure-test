@@ -1,0 +1,8 @@
+shared/build-vars.sh
+shared/build_version.txt
+.pytest_cache
+.netrc
+output/*
+output/.*
+!output/.keep
+*-secrets
