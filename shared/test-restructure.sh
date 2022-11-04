@@ -12,16 +12,6 @@ export FS_TEST_BASE=/root
 export FS_FORCE_ROOT=true
 export WEBAPP_USER=$(whoami)
 export NOT_HEADLESS=false
-#
-#export NOT_HEADLESS=true
-#yum install -y x11vnc Xvfb
-# yum install -y bindfs autoconf fuse fuse-libs fuse-devel libarchive libarchive-devel unzip zip
-# export NOT_HEADLESS=false
-wget -O geckodriver.tar.gz ${GECKODRIVER}
-tar -xvf geckodriver.tar.gz
-mv geckdriver /bin
-
-#
 
 source $HOME/.bash_profile
 BUILD_DIR=/output/restructure
@@ -153,9 +143,9 @@ if [ $? != 0 ]; then
 fi
 
 # echo "Cleanup db dir"
-# rm -f db/app_configs
+rm -f db/app_configs
 rm -f db/app_migrations
-# rm -f db/app_specific
+rm -f db/app_specific
 
 echo "Handle rbenv"
 
@@ -224,14 +214,15 @@ echo "Creating database"
 DBOWNER=${DB_USER} app-scripts/create-test-db.sh
 
 echo "Run tests"
-app-scripts/parallel_test.sh
+app-scripts/parallel_test.sh ${RUN_SPECS}
+
+chmod o+rx tmp
+chmod o+r tmp/failing_specs.log
 if [ "$?" == 0 ]; then
-  less -r tmp/failing_specs.log
-
   echo "rspec OK"
+  echo "View test log: less -r output/restructure/tmp/failing_specs.log"
 else
-  less -r tmp/failing_specs.log
-
+  echo "View test log: less -r output/restructure/tmp/failing_specs.log"
   echo "rspec Failed"
   exit 1
 fi

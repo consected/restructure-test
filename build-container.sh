@@ -45,10 +45,11 @@ sudo -u postgres psql -c 'SELECT version();' 2>&1
 
 # For UI features testing
 amazon-linux-extras install -y epel
-yum install -y bindfs autoconf fuse fuse-libs fuse-devel libarchive libarchive-devel x11vnc Xvfb unzip zip
+yum install -y bindfs autoconf fuse fuse-libs fuse-devel libarchive libarchive-devel x11vnc Xvfb unzip zip wget
 modprobe fuse
 amazon-linux-extras install -y firefox
 amazon-linux-extras install -y libreoffice
+amazon-linux-extras install -y R4
 yum install -y dcmtk poppler-cpp poppler-cpp-devel netpbm netpbm-progs
 
 pip3 install ocrmypdf
@@ -60,7 +61,8 @@ yum install -y tesseract-langpack-deu
 
 wget -O geckodriver.tar.gz ${GECKODRIVER}
 tar -xvf geckodriver.tar.gz
-mv geckdriver /bin
+mv geckodriver /usr/local/bin/
+chmod 777 /usr/local/bin/geckodriver
 
 # Alternative to x11vnc and Xvfb
 # amazon-linux-extras install -y mate-desktop1.x firefox

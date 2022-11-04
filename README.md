@@ -31,7 +31,29 @@ If you use `.netrc` for your git authentication anyway, then a symlink will suff
 
 Ensure that `build-vars.sh` and `.netrc` are not committed to source control. Check the `.gitignore` file.
 
-Build the container with:
+## Install FUSE
+
+FUSE must be installed on the host machine for the container to be able to access. Check if it is present:
+
+    modprobe fuse
+
+If not, install it with one of the following:
+
+### Ubuntu, Debian, etc
+
+    sudo apt install fuse
+
+### CentOS, Amazon Linux 2
+
+    sudo yum install fuse fuse-libs fuse-devel
+
+### Mac
+
+See macFUSE: <https://osxfuse.github.io/>
+
+## Build the container
+
+Build (or rebuild) the container, and run the test suite with:
 
     ./test.sh clean
 
@@ -41,8 +63,9 @@ Run a test according to the settings in `shared/build-vars.sh` with:
 
     ./test.sh
 
-On a successful build, the `output` directory will contain a sub-directory `restructure`
-containing built and deployable code. The file `shared/build_version.txt` will show the new version.
+At the end of the test suite, view the results:
+
+    less -r output/restructure/tmp/failing_specs.log
 
 ## License
 

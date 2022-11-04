@@ -32,6 +32,6 @@ fi
 if [ -z "$(docker images | grep consected/restructure-test)" ]; then
   echo Container not available
 else
-  docker run --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
+  docker run -i --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
     --device /dev/fuse --privileged consected/restructure-test
 fi
