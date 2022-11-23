@@ -6,7 +6,7 @@ A Dockerfile and scripts to test [ReStructure](https://github.com/consected/rest
 
 Clone this repo:
 
-    git clone (https://github.com/consected/restructure-test
+    git clone https://github.com/consected/restructure-test
 
 Copy `build-vars-sample.sh` to `build-vars.sh` and edit it with your details.
 

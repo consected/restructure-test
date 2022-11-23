@@ -1,4 +1,4 @@
-RUBY_V=2.7.5
+RUBY_V=2.7.6
 GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
 REPO_URL="https://github.com/somerep"
@@ -29,3 +29,8 @@ GECKODRIVER=https://github.com/mozilla/geckodriver/releases/download/v0.32.0/gec
 # NO_BRAKEMAN=true
 # Uncomment to specify the specs to run
 # RUN_SPECS=spec/features
+
+DB_NAME=restr
+TEST_DB_NAME=${DB_NAME}_test
+DB_USER=$(whoami)
+DB_PASSWORD=root
