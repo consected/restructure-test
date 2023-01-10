@@ -11,11 +11,8 @@ DB_PASSWORD=root
 # See geckodriver releases at: https://github.com/mozilla/geckodriver/releases
 # It is possible that a different version will be required based on the architecture of the machine. Others available are
 # geckodriver-v0.32.0-linux-aarch64.tar.gz
-# geckodriver-v0.32.0-linux-aarch64.tar.gz.asc
 # geckodriver-v0.32.0-linux32.tar.gz
-# geckodriver-v0.32.0-linux32.tar.gz.asc
 # geckodriver-v0.32.0-linux64.tar.gz
-# geckodriver-v0.32.0-linux64.tar.gz.asc
 # geckodriver-v0.32.0-macos-aarch64.tar.gz
 # geckodriver-v0.32.0-macos.tar.gz
 # geckodriver-v0.32.0-win-aarch64.zip
@@ -29,3 +26,8 @@ GECKODRIVER=https://github.com/mozilla/geckodriver/releases/download/v0.32.0/gec
 # NO_BRAKEMAN=true
 # Uncomment to specify the specs to run
 # RUN_SPECS=spec/features
+
+DB_NAME=restr
+TEST_DB_NAME=${DB_NAME}_test
+DB_USER=$(whoami)
+DB_PASSWORD=root

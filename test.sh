@@ -13,10 +13,13 @@ if [ ! -s shared/build-vars.sh ]; then
   exit
 fi
 
-modprobe fuse
-if [ $? != 0 ]; then
-  echo "Failed to modprobe fuse - this is required to be installed on the host"
-  exit
+if [ "${modprobe}" ]; then
+  # This only makes sense on Linux
+  modprobe fuse
+  if [ $? != 0 ]; then
+    echo "Failed to modprobe fuse - this is required to be installed on the host"
+    exit
+  fi
 fi
 
 if [ "$1" == 'clean' ]; then

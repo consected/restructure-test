@@ -6,16 +6,15 @@ A Dockerfile and scripts to test [ReStructure](https://github.com/consected/rest
 
 Clone this repo:
 
-    git clone (https://github.com/consected/restructure-test
+    git clone https://github.com/consected/restructure-test
 
-Copy `build-vars-sample.sh` to `build-vars.sh` and edit it with your details.
+Copy `shared/build-vars-sample.sh` to `shared/build-vars.sh` and edit it with your details.
 
 Set up a file `shared/.netrc` to include login credentials to any private git repos (the original source
 and optionally the production repo) to allow the container to clone, pull and push your code. The file
 contents should look like:
 
     machine github.com login mygithubid password myplaintextpassword
-    machine hostname.of.prod.repo login prodrepouserid password anotherplaintextpassword
 
 If the repos are public, just run the following to create an empty file:
 

@@ -32,7 +32,9 @@ function check_version_and_exit() {
 }
 
 # Setup App environment
-# export FPHS_POSTGRESQL_DATABASE=${DB_NAME}
+if [ "${DB_NAME}" ]; then
+  export FPHS_POSTGRESQL_DATABASE=${DB_NAME}
+fi
 export FPHS_POSTGRESQL_USERNAME=${DB_USER}
 export FPHS_POSTGRESQL_PASSWORD=${DB_PASSWORD}
 export FPHS_POSTGRESQL_PORT=5432
@@ -107,6 +109,8 @@ git config --global core.compression 0
 
 # Checkout branch to build
 pwd
+# Setting up a new repo breaks if .ruby-version is there before the repo
+git stash --save .ruby-version
 git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
 git pull
 mkdir -p tmp
@@ -118,6 +122,11 @@ chmod 664 log/delayed_job.log
 
 if [ ! -f Gemfile ]; then
   echo "No Gemfile found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
+  exit 1
+fi
+
+if [ ! -f .ruby-version ]; then
+  echo "No .ruby-version found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
   exit 1
 fi
 
