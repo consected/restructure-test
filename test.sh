@@ -13,7 +13,7 @@ if [ ! -s shared/build-vars.sh ]; then
   exit
 fi
 
-if [ "${modprobe}" ]; then
+if [ "$(which modprobe)" ]; then
   # This only makes sense on Linux
   modprobe fuse
   if [ $? != 0 ]; then
