@@ -3,6 +3,9 @@ GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
 REPO_URL="https://github.com/somerep"
 DOCS_REPO_URL="https://github.com/somerep_for_docs"
+# For example, to test the consected/restructure repo
+# REPO_URL="https://github.com/consected/restructure"
+# DOCS_REPO_URL="https://github.com/consected/restructure-docs"
 
 DB_USER=$(whoami)
 DB_PASSWORD=root
