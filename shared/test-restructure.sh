@@ -110,7 +110,7 @@ git config --global core.compression 0
 # Checkout branch to build
 pwd
 # Setting up a new repo breaks if .ruby-version is there before the repo
-git stash --save .ruby-version
+git stash save .ruby-version
 git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
 git pull
 mkdir -p tmp
