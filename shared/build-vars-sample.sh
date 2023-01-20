@@ -1,11 +1,24 @@
 RUBY_V=2.7.6
 GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
-REPO_URL="https://github.com/somerep"
-DOCS_REPO_URL="https://github.com/somerep_for_docs"
+REPO_URL="https://github.com/somerepo"
+DOCS_REPO_URL="https://github.com/somerepo_for_docs"
 # For example, to test the consected/restructure repo
 # REPO_URL="https://github.com/consected/restructure"
 # DOCS_REPO_URL="https://github.com/consected/restructure-docs"
+
+# If running as a development container, specify the follow repo
+# APPS_REPO_URL=https://github.com/somerepo_for_apps
+# For example:
+# APPS_REPO_URL=https://github.com/consected/restructure-apps.git
+
+# VSCode can connect to the container directly when running. 
+# For direct SSH connections, specify
+# SSH_USERNAME=root
+# then copy the id_rsa.pub file to the ./shared directory
+# Run `./test bash`
+# You should be able to `ssh -p 2022 -i ~/.ssh/id_rsa root@localhost`
+
 
 DB_USER=$(whoami)
 DB_PASSWORD=root

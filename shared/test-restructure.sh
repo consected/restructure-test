@@ -1,19 +1,14 @@
 #!/bin/bash
 
 source /shared/build-vars.sh
-
-PGSQLBIN=/usr/bin
-export PATH=${PGSQLBIN}:$PATH
-export PGCLIENTENCODING=UTF8
-export HOME=/root
-export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-export NO_BRAKEMAN
-export FS_TEST_BASE=/root
-export FS_FORCE_ROOT=true
-export WEBAPP_USER=$(whoami)
-export NOT_HEADLESS=false
-
+source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
+
+if [ "$1" == 'setup-dev' ]; then
+  SETUP_DEV=true
+  NO_TEST=true
+fi
+
 BUILD_DIR=/output/restructure
 DOCS_BUILD_DIR=${BUILD_DIR}-docs
 
@@ -31,31 +26,29 @@ function check_version_and_exit() {
   fi
 }
 
-# Setup App environment
-if [ "${DB_NAME}" ]; then
-  export FPHS_POSTGRESQL_DATABASE=${DB_NAME}
-fi
-export FPHS_POSTGRESQL_USERNAME=${DB_USER}
-export FPHS_POSTGRESQL_PASSWORD=${DB_PASSWORD}
-export FPHS_POSTGRESQL_PORT=5432
-export FPHS_POSTGRESQL_HOSTNAME=localhost
-# export FPHS_RAILS_DEVISE_SECRET_KEY="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 128 | head -n 1)"
-# export FPHS_RAILS_SECRET_KEY_BASE="$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 128 | head -n 1)"
-export RAILS_ENV=test
-
-# Check rsync is installed
-if [ ! "$(which rsync)" ]; then
-  yum install -y rsync
-fi
-
 # Start DB
-if [ ! -d /var/lib/pgsql/data ]; then
+if [ ! -d ${PGSQL_DATA_DIR} ]; then
   echo "Initializing the database"
-  sudo -u postgres ${PGSQLBIN}/initdb /var/lib/pgsql/data
+
+
+
+  # Setup Postgres
+  mkdir -p ${PGSQL_DATA_DIR}
+  chown postgres:postgres ${PGSQL_DATA_DIR}
+  
+  sudo -u postgres ${PGSQLBIN}/initdb ${PGSQL_DATA_DIR}
+  if [ $? != 0 ]; then
+    echo 'Failed to install database'
+    exit 9
+  fi
+  sudo -u postgres pg_ctl start -D ${PGSQL_DATA_DIR} -s -o "-p 5432" -w -t 300
+  psql --version
+  sudo -u postgres psql -c 'SELECT version();' 2>&1
+
 fi
 
 echo "Starting the database"
-sudo -u postgres ${PGSQLBIN}/pg_ctl start -D /var/lib/pgsql/data -s -o "-p 5432" -w -t 300
+sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -s -o "-p 5432" -w -t 300
 sudo -u postgres psql -c 'SELECT version();'
 
 # Get source
@@ -151,10 +144,17 @@ if [ $? != 0 ]; then
   exit 9
 fi
 
-# echo "Cleanup db dir"
-rm -f db/app_configs
-rm -f db/app_migrations
-rm -f db/app_specific
+if [ ${NO_TEST} ]; then
+  echo "Set up apps repo"
+  cd ..
+  git clone ${APPS_REPO_URL}
+  cd -
+else
+  echo "Cleanup db dir"
+  rm -f db/app_configs
+  rm -f db/app_migrations
+  rm -f db/app_specific
+fi
 
 echo "Handle rbenv"
 
@@ -222,16 +222,27 @@ fi
 echo "Creating database"
 DBOWNER=${DB_USER} app-scripts/create-test-db.sh
 
-echo "Run tests"
-app-scripts/parallel_test.sh ${RUN_SPECS}
+if [ ${SETUP_DEV} ]; then
+  echo 'Continuing with bash to keep the container running'
+  echo 'Connect with VSCode, via SSH (see the build-vars.sh)'
+  echo 'or exit to close the container'
+  /root/run-dev.sh
+fi
 
-chmod o+rx tmp
-chmod o+r tmp/failing_specs.log
-if [ "$?" == 0 ]; then
-  echo "rspec OK"
-  echo "View test log: less -r output/restructure/tmp/failing_specs.log"
-else
-  echo "View test log: less -r output/restructure/tmp/failing_specs.log"
-  echo "rspec Failed"
-  exit 1
+if [ -z ${NO_TEST} ]; then
+  echo "Run tests"
+  export RAILS_ENV=test
+
+  app-scripts/parallel_test.sh ${RUN_SPECS}
+
+  chmod o+rx tmp
+  chmod o+r tmp/failing_specs.log
+  if [ "$?" == 0 ]; then
+    echo "rspec OK"
+    echo "View test log: less -r output/restructure/tmp/failing_specs.log"
+  else
+    echo "View test log: less -r output/restructure/tmp/failing_specs.log"
+    echo "rspec Failed"
+    exit 1
+  fi
 fi

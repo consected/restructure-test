@@ -2,15 +2,32 @@
 # Setup the build container with
 #    docker build . --no-cache -t consected/restructure-test
 
-# set -xv
+ls -als /shared
 source /shared/build-vars.sh
-export HOME=/root
+source /shared/setup-dev-env.sh
+source $HOME/.bash_profile
 
-PGVER=12
+
+if [ -z ${PGSQL_DATA_DIR} ]; then
+  echo 'PGSQL_DATA_DIR not set. Probably failed to load setup-dev-env.sh'
+  exit 9
+fi
 
 yum update -y
-yum install -y deltarpm sudo rsync adduser
+yum install -y deltarpm sudo rsync adduser openssh-server
 yum update
+
+ssh-keygen -A
+
+echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
+echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
+
+/usr/sbin/sshd
+
+if [ ${DEBUG_BUILD} ]; then
+  echo "Debug build - exiting"
+  exit
+fi
 
 curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
 curl --silent --location https://rpm.nodesource.com/setup_14.x | bash -
@@ -37,11 +54,6 @@ fi
 adduser postgres
 ls /usr/
 ls /usr/bin/
-# Setup Postgres
-sudo -u postgres initdb /var/lib/pgsql/data
-sudo -u postgres pg_ctl start -D /var/lib/pgsql/data -s -o "-p 5432" -w -t 300
-psql --version
-sudo -u postgres psql -c 'SELECT version();' 2>&1
 
 # For UI features testing
 amazon-linux-extras install -y epel
