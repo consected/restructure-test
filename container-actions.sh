@@ -113,7 +113,12 @@ else
     if [ "$(docker container ls -a --filter "status=exited" --filter "status=created" --filter "name=restructure-test" -q)" ]; then
       # A container exists but is not started: we must start it
       echo "Starting container"
-      docker container start restructure-test
+      docker container start -i restructure-test &
+
+      while [ "$(docker container ls -a --filter "status=exited" --filter "status=created" --filter "name=restructure-test" -q)" ]; do
+        sleep 1
+        echo "Waiting for container to start"
+      done
     fi
 
     # In the running container, execute a command if one has been specified, otherwise just attach to the container
