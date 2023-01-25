@@ -84,7 +84,7 @@ else
     echo 'Setup dev'
     C_CMD="/shared/test-restructure.sh setup-dev"
     C_EXTRA_ARG='-t'
-    CAN_CLEAN=truetest-restructure
+    CAN_CLEAN=true
   elif has_arg 'bash'; then
     echo 'Execute bash'
     C_CMD=/shared/run-dev.sh
@@ -132,7 +132,7 @@ else
       --device /dev/fuse --privileged \
       consected/restructure-test
 
-    ./container-actions.sh "$(args_excluding 'clean')"
+    ./container-actions.sh $(args_excluding 'clean')
     # --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
   fi
 fi

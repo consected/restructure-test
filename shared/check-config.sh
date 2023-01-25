@@ -5,4 +5,5 @@
 
 source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
+echo 'Running check-config.sh'
 /bin/bash &

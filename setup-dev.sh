@@ -5,7 +5,7 @@
 cd -P -- "$(dirname -- "$0")"
 
 if [ "$1" == clean ]; then
-  CLEANARG=clean
+  CLEANARG=clean-output
 fi
 
 ./container-actions.sh setup-dev ${CLEANARG}
