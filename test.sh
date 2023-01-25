@@ -5,7 +5,8 @@
 # bash - a simple command prompt that also keeps the container running
 # test (or blank) - run the full test suite
 #
-# optionally specify 'clean' as an argument to clean up the environment and database before starting
+# optionally specify 'clean' as an argument to clean up the containers, source code and database before starting
+# or 'clean-output' to just clean the source code and database
 #
 # For example:
 # Run the test suite
@@ -18,6 +19,28 @@
 
 
 cd -P -- "$(dirname -- "$0")"
+script_args="$@"
+
+function has_arg() {
+  for i in ${script_args}; do
+    if [ "$1" == "${i}" ]; then
+      echo ${i}
+      return 0
+    fi
+  done 
+  return 1
+}
+
+function args_excluding() {
+  local new_args=''
+  for i in ${script_args}; do
+    if ! [[ "${i}" == +($1) ]]; then
+      new_args="${new_args}${i} "
+    fi
+  done 
+  echo ${new_args}
+}
+
 
 if [ ! -s shared/.netrc ]; then
   echo "shared/.netrc file is not set up. See README.md for more info."
@@ -38,12 +61,9 @@ if [ "$(which modprobe)" ]; then
   fi
 fi
 
-if [ "$1" == 'clean' ] || [ "$2" == 'clean' ]; then
+if has_arg 'clean'; then
   docker image rm consected/restructure-test --force
-  echo "If requested, sudo is required to clean up the output directories"
-  sudo rm -rf output/restructure*
-  sudo rm -rf output/pgsql
-  sleep 5
+  sleep 5  
 fi
 
 if [ -z "$(docker images | grep consected/restructure-test)" ]; then
@@ -54,35 +74,53 @@ if [ -z "$(docker images | grep consected/restructure-test)" ]; then
   echo Container not available
 else
 
-  if [ "$1" == 'setup-dev' ] || [ "$2" == 'setup-dev' ]; then
+  if has_arg 'setup-dev'; then
+    echo 'Setup dev'
     C_CMD="/shared/test-restructure.sh setup-dev"
     C_EXTRA_ARG='-t'
-  elif [ "$1" == 'bash' ] || [ "$2" == 'bash' ]; then
-    C_CMD=
+    CAN_CLEAN=truetest-restructure
+  elif has_arg 'bash' ; then
+    echo 'Execute bash'
+    C_CMD=/shared/run-dev.sh
     C_EXTRA_ARG='-t'
-  elif [ -z $1 ] || [ "$1" == 'test' ] || [ "$2" == 'test' ]; then
-    C_CMD="/shared/test-restructure.sh"
+  elif [ -z "$(args_excluding 'clean|clean-output')" ] || has_arg 'test'; then
+    echo 'Run parallel test suite'
+    C_CMD="/shared/test-restructure.sh test"
+    CAN_CLEAN=true
   else
-    C_CMD=$1
+    C_CMD="$(args_excluding 'clean|clean-output')"
+    echo "Execute alternative command: ${C_CMD}"
   fi
 
-  echo "Running container with ${C_CMD}"
+  if [ "${CAN_CLEAN}" ]; then
+    if has_arg 'clean' || has_arg 'clean-output'; then
+      C_CMD="${C_CMD} clean-output"
+    fi
+  fi
 
-  if [ "$(docker container ls -a | grep consected/restructure)" ]; then
-    if [ ! "$(docker container ls | grep consected/restructure)" ]; then
+  # Does a container exist? If not, we must run it
+  if [ "$(docker container ls -a --filter "name=restructure-test" -q)" ]; then
+    if [ "$(docker container ls -a --filter "status=exited" --filter "status=created" --filter "name=restructure-test" -q)" ]; then
+      # A container exists but is not started: we must start it
+      echo "Starting container"
       docker container start restructure-test
     fi
 
-    if [ ${C_CMD} ]; then
-      docker exec restructure-test ${C_CMD}
+    # In the running container, execute a command if one has been specified, otherwise just attach to the container
+    if [ "${C_CMD}" ]; then
+      echo "Executing command in running container: ${C_CMD}"
+      docker exec -i ${C_EXTRA_ARG} restructure-test ${C_CMD}
     else
+      echo "Attaching to running container"
       docker attach restructure-test
     fi
   else
+    # Run the container from the image consected/restructure-test, and call the specified command
     docker run -i ${C_EXTRA_ARG} \
       --name=restructure-test \
-      --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
-      -p 2022:22 \
-      --device /dev/fuse --privileged consected/restructure-test ${C_CMD}
+      -p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432 \
+      --device /dev/fuse --privileged \
+      consected/restructure-test ${C_CMD}
+      # --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
   fi  
 fi

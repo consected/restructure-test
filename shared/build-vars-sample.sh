@@ -19,10 +19,6 @@ DOCS_REPO_URL="https://github.com/somerepo_for_docs"
 # Run `./test bash`
 # You should be able to `ssh -p 2022 -i ~/.ssh/id_rsa root@localhost`
 
-
-DB_USER=$(whoami)
-DB_PASSWORD=root
-
 # The geckodriver is required for Selenium to run against Firefox.
 # See geckodriver releases at: https://github.com/mozilla/geckodriver/releases
 # It is possible that a different version will be required based on the architecture of the machine. Others available are
