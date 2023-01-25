@@ -6,31 +6,52 @@ source $HOME/.bash_profile
 
 echo "**** Running test-restructure - $@ ****"
 
+function stop_db() {
+  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}"
+  if [ $? == 0 ]; then
+    echo 'Stopping the database'
+    sudo -u postgres ${PGSQLBIN}/pg_ctl stop -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}" -w -t 300
+    echo "Stop code: $?"
+    sleep 5
+  fi
+}
+
+function start_db() {
+  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR}
+  if [ $? != 0 ]; then
+    echo 'pg_ctl says the DB is already running, which cause a failure in a moment'
+  fi
+
+  echo 'Starting the DB'
+  sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}" -w -t 300
+}
+
+NO_TEST=true
+
 if [ "$1" == 'setup-dev' ]; then
   echo "**** Setting up development environment ****"
   SETUP_DEV=true
-  NO_TEST=true
+fi
+
+if [ "$1" == 'test' ]; then
+  echo "**** Setting up test environment ****"
+  unset NO_TEST
 fi
 
 if [ "$2" == 'clean-output' ]; then
   echo "**** Cleaning output and database ****"
-  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR}
-  if [ $? == 0 ]; then
-    echo 'Stopping the database'
-    sudo -u postgres ${PGSQLBIN}/pg_ctl stop -D ${PGSQL_DATA_DIR} -o "-p 5432" -w -t 300
-    echo "Stop code: $?"
-  fi
+  stop_db
   echo 'Removing files as /output'
   rm -rf /output/*
 fi
 
+chmod 777 /tmp
+
 BUILD_DIR=/output/restructure
 DOCS_BUILD_DIR=${BUILD_DIR}-docs
 
-cp /shared/.netrc ${HOME}/.netrc
+mkdir -p /output
 chmod 600 ${HOME}/.netrc
-
-echo > /shared/build_version.txt
 
 function check_version_and_exit() {
   IFS='.' read -a OLD_VER_ARRAY < version.txt
@@ -48,7 +69,7 @@ if [ ! -d ${PGSQL_DATA_DIR} ]; then
   # Setup Postgres
   mkdir -p ${PGSQL_DATA_DIR}
   chown postgres:postgres ${PGSQL_DATA_DIR}
-  
+
   sudo -u postgres ${PGSQLBIN}/initdb ${PGSQL_DATA_DIR}
   if [ $? != 0 ]; then
     echo 'Failed to install database'
@@ -56,14 +77,8 @@ if [ ! -d ${PGSQL_DATA_DIR} ]; then
   fi
   ls ${PGSQL_DATA_DIR}
   sleep 5
-  
-  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR}
-  if [ $? != 0 ]; then
-    echo 'pg_ctl says the DB is already running, which cause a failure in a moment'
-  fi
 
-  echo 'Starting the DB'
-  sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -o "-p 5432" -w -t 300
+  start_db
   if [ $? != 0 ]; then
     echo 'Failed to start database'
     echo 'Other postgres processes:'
@@ -73,7 +88,7 @@ if [ ! -d ${PGSQL_DATA_DIR} ]; then
   psql --version
   sudo -u postgres psql -c 'SELECT version();' 2>&1
 
-  echo "localhost:5432:*:${DB_USER}:${DB_PASSWORD}" > ${HOME}/.pgpass
+  echo "localhost:${PGPORT}:*:${DB_USER}:${DB_PASSWORD}" > ${HOME}/.pgpass
   chmod 600 /root/.pgpass
 
   psql --version
@@ -88,15 +103,9 @@ else
   echo "Starting the database"
   ps aux | grep 'postgres'
 
-  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR}
-  if [ $? == 0 ]; then
-    echo 'Stopping the database'
-    sudo -u postgres ${PGSQLBIN}/pg_ctl stop -D ${PGSQL_DATA_DIR} -o "-p 5432" -w -t 300
-    echo "Stop code: $?"
-  fi
-  echo 'Restarting the DB'
-  sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -o "-p 5432" -w -t 300
-  
+  stop_db
+  start_db
+
   if [ $? != 0 ]; then
     echo 'Failed to start database'
     echo 'Other postgres processes:'
@@ -106,7 +115,6 @@ else
   ps aux | grep 'postgres'
   sudo -u postgres psql -c 'SELECT version();'
 fi
-
 
 # Get source
 
@@ -140,6 +148,8 @@ fi
 
 if [ "${SETUP_DEV}" ] || [ "${PULL_REPO}" ]; then
   echo 'Pull source repo'
+  cd ${BUILD_DIR}
+
   # Ensure we don't get an unnecessary conflict if .ruby-version is there before the repo
   git stash save .ruby-version
   git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
@@ -152,6 +162,7 @@ if [ "${SETUP_DEV}" ] || [ "${PULL_REPO}" ]; then
   chmod 664 log/delayed_job.log
 fi
 
+cd ${BUILD_DIR}
 if [ ! -f Gemfile ]; then
   echo "No Gemfile found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
   ls
@@ -162,8 +173,6 @@ if [ ! -f .ruby-version ]; then
   echo "No .ruby-version found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
   exit 1
 fi
-
-
 
 if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
   cd $(dirname ${DOCS_BUILD_DIR})
@@ -180,7 +189,6 @@ else
   cd ${DOCS_BUILD_DIR}
   git pull
 fi
-
 
 cd ${BUILD_DIR}
 
@@ -263,7 +271,6 @@ if [ "${DROP_DATABASE}" == 'true' ]; then
   echo "Dropping database"
   app-scripts/drop-test-db.sh
 fi
-
 
 if [ "${SETUP_DEV}" ]; then
   echo "Creating database for dev"

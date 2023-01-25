@@ -8,8 +8,9 @@ COPY shared/build-vars.sh /shared/build-vars.sh
 COPY shared/.netrc /root/.netrc
 COPY shared/setup-dev-env.sh /shared/setup-dev-env.sh
 COPY shared/test-restructure.sh /shared/test-restructure.sh
+COPY shared/check-config.sh /shared/check-config.sh
 
 RUN /root/build-container.sh
 
-CMD ["/shared/run-dev.sh"]
+CMD ["/shared/check-config.sh"]
 
