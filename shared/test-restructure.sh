@@ -4,18 +4,54 @@ source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
 
+echo "**** Running test-restructure - $@ ****"
+
+function stop_db() {
+  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}"
+  if [ $? == 0 ]; then
+    echo 'Stopping the database'
+    sudo -u postgres ${PGSQLBIN}/pg_ctl stop -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}" -w -t 300
+    echo "Stop code: $?"
+    sleep 5
+  fi
+}
+
+function start_db() {
+  sudo -u postgres ${PGSQLBIN}/pg_ctl status -D ${PGSQL_DATA_DIR}
+  if [ $? != 0 ]; then
+    echo 'pg_ctl says the DB is already running, which cause a failure in a moment'
+  fi
+
+  echo 'Starting the DB'
+  sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -o "-p ${PGPORT}" -w -t 300
+}
+
+NO_TEST=true
+
 if [ "$1" == 'setup-dev' ]; then
+  echo "**** Setting up development environment ****"
   SETUP_DEV=true
-  NO_TEST=true
 fi
+
+if [ "$1" == 'test' ]; then
+  echo "**** Setting up test environment ****"
+  unset NO_TEST
+fi
+
+if [ "$2" == 'clean-output' ]; then
+  echo "**** Cleaning output and database ****"
+  stop_db
+  echo 'Removing files as /output'
+  rm -rf /output/*
+fi
+
+chmod 777 /tmp
 
 BUILD_DIR=/output/restructure
 DOCS_BUILD_DIR=${BUILD_DIR}-docs
 
-cp /shared/.netrc ${HOME}/.netrc
+mkdir -p /output
 chmod 600 ${HOME}/.netrc
-
-echo > /shared/build_version.txt
 
 function check_version_and_exit() {
   IFS='.' read -a OLD_VER_ARRAY < version.txt
@@ -30,67 +66,59 @@ function check_version_and_exit() {
 if [ ! -d ${PGSQL_DATA_DIR} ]; then
   echo "Initializing the database"
 
-
-
   # Setup Postgres
   mkdir -p ${PGSQL_DATA_DIR}
   chown postgres:postgres ${PGSQL_DATA_DIR}
-  
+
   sudo -u postgres ${PGSQLBIN}/initdb ${PGSQL_DATA_DIR}
   if [ $? != 0 ]; then
     echo 'Failed to install database'
     exit 9
   fi
-  sudo -u postgres pg_ctl start -D ${PGSQL_DATA_DIR} -s -o "-p 5432" -w -t 300
+  ls ${PGSQL_DATA_DIR}
+  sleep 5
+
+  start_db
+  if [ $? != 0 ]; then
+    echo 'Failed to start database'
+    echo 'Other postgres processes:'
+    ps aux | grep 'postgres'
+    exit 9
+  fi
   psql --version
   sudo -u postgres psql -c 'SELECT version();' 2>&1
 
-fi
+  echo "localhost:${PGPORT}:*:${DB_USER}:${DB_PASSWORD}" > ${HOME}/.pgpass
+  chmod 600 /root/.pgpass
 
-echo "Starting the database"
-sudo -u postgres ${PGSQLBIN}/pg_ctl start -D ${PGSQL_DATA_DIR} -s -o "-p 5432" -w -t 300
-sudo -u postgres psql -c 'SELECT version();'
+  psql --version
+
+  echo "Create user ${DB_USER}"
+  sudo -u postgres ${PGSQLBIN}/psql 2>&1 << EOF
+SELECT version();
+CREATE USER ${DB_USER} WITH LOGIN PASSWORD '${DB_PASSWORD}';
+EOF
+
+else
+  echo "Starting the database"
+  ps aux | grep 'postgres'
+
+  stop_db
+  start_db
+
+  if [ $? != 0 ]; then
+    echo 'Failed to start database'
+    echo 'Other postgres processes:'
+    ps aux | grep 'postgres'
+    exit 9
+  fi
+  ps aux | grep 'postgres'
+  sudo -u postgres psql -c 'SELECT version();'
+fi
 
 # Get source
 
-if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
-  echo "Cloning repo"
-  rm -rf ${BUILD_DIR}
-  rm -rf ${DOCS_BUILD_DIR}
-  cd $(dirname ${BUILD_DIR})
-  git clone ${REPO_URL} ${BUILD_DIR}
-  git clone ${DOCS_REPO_URL} ${DOCS_BUILD_DIR}
-  FIRST_RUN=true
-else
-  echo "Pulling from repo"
-fi
-
-if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
-  echo "Failed to get the build repo"
-  exit 1
-fi
-
-cd ${BUILD_DIR}
-rbenv local ${RUBY_V}
-rbenv global ${RUBY_V}
-
-if [ "$(cat ${BUILD_DIR}/.ruby-version)" != ${RUBY_V} ]; then
-  rbenv install ${RUBY_V}
-  rbenv local ${RUBY_V}
-  rbenv global ${RUBY_V}
-fi
-
-if [ "$(cat ${BUILD_DIR}/.ruby-version)" != ${RUBY_V} ]; then
-  echo "Ruby versions don't match: $(cat ${BUILD_DIR}/.ruby-version) != ${RUBY_V}"
-  exit 7
-fi
-
-if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
-  echo "Failed to get the docs repo"
-  exit 8
-fi
-
-cd ${BUILD_DIR}
+cd $(dirname ${BUILD_DIR})
 git config --global user.email ${GIT_EMAIL}
 git config --global user.name "Restructure TEST Process"
 git config --global push.default matching
@@ -100,21 +128,44 @@ git config --global https.postBuffer 500M
 git config --global https.maxRequestBuffer 100M
 git config --global core.compression 0
 
-# Checkout branch to build
-pwd
-# Setting up a new repo breaks if .ruby-version is there before the repo
-git stash save .ruby-version
-git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
-git pull
-mkdir -p tmp
-chmod 774 tmp
-mkdir -p log
-chmod 774 log
-touch log/delayed_job.log
-chmod 664 log/delayed_job.log
+if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
+  echo "Cloning repo"
+  rm -rf ${BUILD_DIR}
+  cd $(dirname ${BUILD_DIR})
+  git clone ${REPO_URL} ${BUILD_DIR}
+  git stash save .ruby-version
+  git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
 
+  if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
+    echo "Failed to get the build repo"
+    exit 1
+  fi
+  PULL_REPO=true
+else
+  echo "Will pull from repo"
+  git pull
+fi
+
+if [ "${SETUP_DEV}" ] || [ "${PULL_REPO}" ]; then
+  echo 'Pull source repo'
+  cd ${BUILD_DIR}
+
+  # Ensure we don't get an unnecessary conflict if .ruby-version is there before the repo
+  git stash save .ruby-version
+  git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
+  git pull
+  mkdir -p tmp
+  chmod 774 tmp
+  mkdir -p log
+  chmod 774 log
+  touch log/delayed_job.log
+  chmod 664 log/delayed_job.log
+fi
+
+cd ${BUILD_DIR}
 if [ ! -f Gemfile ]; then
   echo "No Gemfile found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
+  ls
   exit 1
 fi
 
@@ -122,6 +173,24 @@ if [ ! -f .ruby-version ]; then
   echo "No .ruby-version found after checking out branch ${TEST_GIT_BRANCH} to $(pwd)"
   exit 1
 fi
+
+if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
+  cd $(dirname ${DOCS_BUILD_DIR})
+  echo "Cloning docs repo"
+  rm -rf ${DOCS_BUILD_DIR}
+  cd $(dirname ${DOCS_BUILD_DIR})
+  git clone ${DOCS_REPO_URL} ${DOCS_BUILD_DIR}
+  if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
+    echo "Failed to get the docs repo"
+    exit 8
+  fi
+else
+  echo "Pulling from docs repo"
+  cd ${DOCS_BUILD_DIR}
+  git pull
+fi
+
+cd ${BUILD_DIR}
 
 check_version_and_exit
 
@@ -144,11 +213,16 @@ if [ $? != 0 ]; then
   exit 9
 fi
 
-if [ ${NO_TEST} ]; then
-  echo "Set up apps repo"
-  cd ..
-  git clone ${APPS_REPO_URL}
-  cd -
+if [ "${NO_TEST}" ]; then
+  if [ "${APPS_REPO_URL}" ]; then
+    echo "Set up apps repo"
+    cd ..
+    git clone ${APPS_REPO_URL}
+    cd -
+    git checkout db/app_configs
+    git checkout db/app_migrations
+    git checkout db/app_specific
+  fi
 else
   echo "Cleanup db dir"
   rm -f db/app_configs
@@ -157,30 +231,19 @@ else
 fi
 
 echo "Handle rbenv"
-
-if [ "$(rbenv local)" != "${RUBY_V}" ] || [ -z "$(ruby --version | grep ${RUBY_V})" ]; then
-  echo "Installing new ruby version ${RUBY_V}"
-  git -C /root/.rbenv/plugins/ruby-build pull
-  rbenv install ${RUBY_V}
-  rbenv local ${RUBY_V}
-  rbenv global ${RUBY_V}
+SOURCE_RUBY_V=$(cat ${BUILD_DIR}/.ruby-version)
+RBENV_LOCAL=$(rbenv local)
+if [ "${SOURCE_RUBY_V}" != ${RUBY_V} ] || [ "${RBENV_LOCAL}" != "${RUBY_V}" ]; then
+  echo "Ruby versions don't match: ${SOURCE_RUBY_V} !=? ${RUBY_V} !=? ${RBENV_LOCAL}"
+  echo "Change the build-vars.sh specification and rebuild the container"
+  exit 7
 fi
-
-if [ "$(rbenv local)" != "${RUBY_V}" ]; then
-  echo "Failed to install or use ruby version ${RUBY_V}. rbenv is using $(rbenv local). The file .ruby-version is #(cat .ruby-version)"
-  exit 70
-fi
-
-rbenv local ${RUBY_V}
-rbenv global ${RUBY_V}
-echo "Using ruby version $(rbenv local)"
-which ruby
-ruby --version
 
 echo "Bundle"
 rm -f .bundle/config
 gem install bundler
 
+# Install gems with versions specified in the lockfile
 bundle install
 
 bundle check
@@ -189,6 +252,7 @@ if [ "$?" != "0" ]; then
   exit 7
 fi
 
+# Install JS modules with the versions specified in the lockfile
 bin/yarn install --frozen-lockfile
 
 if [ ! -d node_modules ]; then
@@ -203,36 +267,40 @@ if [ "$(grep '<<<< HEAD' db/structure)" ]; then
   exit 65
 fi
 
-echo "localhost:5432:*:${DB_USER}:${DB_PASSWORD}" > ${HOME}/.pgpass
-chmod 600 /root/.pgpass
-
-psql --version
-
-echo "Create user ${DB_USER}"
-sudo -u postgres ${PGSQLBIN}/psql 2>&1 << EOF
-SELECT version();
-CREATE USER ${DB_USER} WITH LOGIN PASSWORD '${DB_PASSWORD}';
-EOF
-
 if [ "${DROP_DATABASE}" == 'true' ]; then
   echo "Dropping database"
   app-scripts/drop-test-db.sh
 fi
 
-echo "Creating database"
-DBOWNER=${DB_USER} app-scripts/create-test-db.sh
+if [ "${SETUP_DEV}" ]; then
+  echo "Creating database for dev"
+  unset RAILS_ENV
+  sudo -u postgres psql -c "create database ${DEV_DB_NAME} owner ${DB_USER};"
+  psql -d ${DEV_DB_NAME} < db/structure.sql
+  bundle exec rake db:migrate
 
-if [ ${SETUP_DEV} ]; then
-  echo 'Continuing with bash to keep the container running'
-  echo 'Connect with VSCode, via SSH (see the build-vars.sh)'
-  echo 'or exit to close the container'
-  /root/run-dev.sh
+  if [ -f db/demo-data.zip ]; then
+    rm -f db/demo-data.sql
+    unzip db/demo-data.zip -d db/
+    psql -d ${DEV_DB_NAME} < db/demo-data.sql
+    rm -f db/demo-data.sql
+  fi
+
+  bundle exec rake db:seed
+
+  # Discard any changes to the structure that have been introduced
+  git checkout db/structure.sql
+
+  /shared/run-dev.sh
 fi
 
 if [ -z ${NO_TEST} ]; then
-  echo "Run tests"
   export RAILS_ENV=test
 
+  echo "Creating database for test"
+  DBOWNER=${DB_USER} app-scripts/create-test-db.sh
+
+  echo "Run tests"
   app-scripts/parallel_test.sh ${RUN_SPECS}
 
   chmod o+rx tmp
@@ -246,3 +314,5 @@ if [ -z ${NO_TEST} ]; then
     exit 1
   fi
 fi
+
+echo 'Exiting test-restructure.sh'

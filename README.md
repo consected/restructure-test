@@ -1,6 +1,7 @@
-# Build ReStructure
+# Test and Develop ReStructure
 
-A Dockerfile and scripts to test [ReStructure](https://github.com/consected/restructure).
+A Dockerfile and scripts to build a development environment in a container or run the full test suite
+for [ReStructure](https://github.com/consected/restructure).
 
 ## Configuration
 
@@ -50,21 +51,71 @@ If not, install it with one of the following:
 
 See macFUSE: <https://osxfuse.github.io/>
 
-## Build the container
+## Run the test suite
 
-Build (or rebuild) the container, and run the test suite with:
-
-    ./test.sh clean
-
-## Run a test
-
-Run a test according to the settings in `shared/build-vars.sh` with:
+Run the test suite according to the settings in `shared/build-vars.sh` with:
 
     ./test.sh
 
-At the end of the test suite, view the results:
+Optionally, add the argument 'clean' to clean up the source and database before running the tests
 
-    less -r output/restructure/tmp/failing_specs.log
+    ./test.sh clean
+
+The container will exit at the end of the test suite.
+
+## Get log of failing specs
+
+Simply run:
+
+    ./get-failing-specs.sh
+
+or to use `less` pager interactively:
+
+    ./get-failing-specs.sh less
+
+Of course, piping the result works:
+
+    ./get-failing-specs.sh | grep Error
+
+## Start and attach to an existing container
+
+Run the following to connect to an existing test or development environment container for debugging or development:
+
+    ./run.sh
+
+This will run enter bash interactively within the container. Use it directly, SSH or connect through VSCode
+
+Optionally, add arguments representing an alternative command to run and return immediately.
+
+    ./run.sh ls -a /output/restructure
+
+Add 'interactive' as the first argument to force interactive operation.
+For example, to run `less` allowing user interaction:
+
+    ./run.sh interactive less -r output/restructure/tmp/failing_specs.log
+
+## Setup a development environment
+
+Run the following to set up a dev environment, which you can subsequently connect to through SSH or VSCode Docker Containers:
+
+    ./setup-dev.sh
+
+Optionally, add the argument 'clean' to clean up the source and database before starting the setup
+
+    ./setup-dev.sh clean
+
+The `setup-dev.sh` command only needs to be run once. Feel free to use `./run.sh` to quickly restart a container that
+has already been set up.
+
+## Cleaning up
+
+To remove **restructure-test** containers and images, run:
+
+     ./clean.sh only
+
+To clean and rebuild, run:
+
+     ./clean.sh rebuild
 
 ## License
 

@@ -8,10 +8,15 @@ source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
 
 
+echo "**** Building restructure-test container ****"
+
 if [ -z ${PGSQL_DATA_DIR} ]; then
   echo 'PGSQL_DATA_DIR not set. Probably failed to load setup-dev-env.sh'
   exit 9
 fi
+
+cd /root
+chmod 600 /root/.netrc; 
 
 yum update -y
 yum install -y deltarpm sudo rsync adduser openssh-server
