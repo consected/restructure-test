@@ -40,6 +40,23 @@ function args_excluding() {
   echo ${new_args}
 }
 
+if ! groups | grep -q '\bdocker\b'; then
+  cat << EOF
+Current user is not a member of the 'docker' group.
+
+Create the docker group.
+  sudo groupadd docker
+
+Add your user to the docker group.
+  sudo usermod -aG docker $USER
+
+Run the following to activate the changes to groups.
+ newgrp docker
+EOF
+
+  exit 2
+fi
+
 if [ ! -s shared/.netrc ]; then
   echo "shared/.netrc file is not set up. See README.md for more info."
   exit
