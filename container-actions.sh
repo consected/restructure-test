@@ -80,26 +80,26 @@ if [ -z "$(docker images | grep consected/restructure-test)" ]; then
   echo Container not available
 else
 
+  C_EXTRA_ARG='-t'
   if has_arg 'setup-dev'; then
     echo 'Setup dev'
     C_CMD="/shared/test-restructure.sh setup-dev"
-    C_EXTRA_ARG='-t'
     CAN_CLEAN=true
   elif has_arg 'bash'; then
     echo 'Execute bash'
     C_CMD=/shared/run-dev.sh
-    C_EXTRA_ARG='-t'
   elif [ -z "$(args_excluding 'clean|clean-output')" ] || has_arg 'test'; then
     echo 'Run parallel test suite'
     C_CMD="/shared/test-restructure.sh test"
     CAN_CLEAN=true
+    unset C_EXTRA_ARG
   elif has_arg 'interactive'; then
     C_CMD="$(args_excluding 'clean|clean-output|interactive')"
-    C_EXTRA_ARG='-t'
     echo "Execute alternative command interactively: ${C_CMD}"
   else
     C_CMD="$(args_excluding 'clean|clean-output')"
     echo "Execute alternative command: ${C_CMD}"
+    unset C_EXTRA_ARG
   fi
 
   if [ "${CAN_CLEAN}" ]; then
@@ -108,15 +108,20 @@ else
     fi
   fi
 
+  MUST_RUN=true
+
   # Does a container exist? If not, we must run it
-  if [ "$(docker container ls -a --filter "name=restructure-test" -q)" ]; then
-    if [ "$(docker container ls -a --filter "status=exited" --filter "status=created" --filter "name=restructure-test" -q)" ]; then
+  STATUS=$(./status.sh)
+  if [ "${STATUS}" == 'running' ] || [ "${STATUS}" == 'stopped' ] || [ "${STATUS}" == 'other' ]; then
+
+    unset MUST_RUN
+    if [ "${STATUS}" == 'stopped' ]; then
       # A container exists but is not started: we must start it
       echo "Starting container"
-      docker container start -i restructure-test &
+      docker container start restructure-test
 
-      while [ "$(docker container ls -a --filter "status=exited" --filter "status=created" --filter "name=restructure-test" -q)" ]; do
-        sleep 1
+      while [ "$(./status.sh)" == 'stopped' ]; do
+        sleep 2
         echo "Waiting for container to start"
       done
     fi
@@ -129,13 +134,31 @@ else
       echo "Attaching to running container"
       docker attach restructure-test
     fi
-  else
+
+  fi
+
+  if [ "${MUST_RUN}" ]; then
     # Run the container from the image consected/restructure-test, and call the specified command
-    docker run ${C_EXTRA_ARG} \
+    echo "Running container because it is not yet running: $(./status.sh)"
+    # ${C_EXTRA_ARG}
+    docker run -dt \
       --name=restructure-test \
       -p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432 \
-      --device /dev/fuse --privileged \
+      --device /dev/fuse \
+      --cap-add SYS_ADMIN \
       consected/restructure-test
+
+    RES=$?
+    if [ $? != 0 ]; then
+      echo 'Failed to run container'
+      echo "Result: ${RES}"
+      exit 7
+    fi
+
+    while [ "$(./status.sh)" != 'created' ] && [ "$(./status.sh)" != 'running' ]; do
+      sleep 2
+      echo "Waiting for run to complete: $(./status.sh)"
+    done
 
     ./container-actions.sh $(args_excluding 'clean')
     # --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \

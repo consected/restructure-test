@@ -7,7 +7,6 @@ source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
 
-
 echo "**** Building restructure-test container ****"
 
 if [ -z ${PGSQL_DATA_DIR} ]; then
@@ -16,7 +15,12 @@ if [ -z ${PGSQL_DATA_DIR} ]; then
 fi
 
 cd /root
-chmod 600 /root/.netrc; 
+chmod 600 /root/.netrc
+
+if [ ${DEBUG_BUILD} ]; then
+  echo "Debug build - exiting"
+  exit
+fi
 
 yum update -y
 yum install -y deltarpm sudo rsync adduser openssh-server
@@ -28,11 +32,6 @@ echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config
 echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 
 /usr/sbin/sshd
-
-if [ ${DEBUG_BUILD} ]; then
-  echo "Debug build - exiting"
-  exit
-fi
 
 curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
 curl --silent --location https://rpm.nodesource.com/setup_14.x | bash -

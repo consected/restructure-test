@@ -6,4 +6,8 @@
 source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 echo 'Running check-config.sh and keeping bash running'
-/bin/bash
+if [ -z $1 ]; then
+  /bin/bash
+else
+  $@
+fi

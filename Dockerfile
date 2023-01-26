@@ -12,5 +12,5 @@ COPY shared/check-config.sh /shared/check-config.sh
 
 RUN /root/build-container.sh
 
-CMD ["/shared/check-config.sh"]
+CMD /shared/check-config.sh
 
