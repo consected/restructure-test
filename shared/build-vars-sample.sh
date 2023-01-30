@@ -12,7 +12,10 @@ DOCS_REPO_URL="https://github.com/somerepo_for_docs"
 # For example:
 # APPS_REPO_URL=https://github.com/consected/restructure-apps.git
 
-# VSCode can connect to the container directly when running. 
+# To map specific container ports:
+# MAPPED_PORTS=-p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432
+
+# VSCode can connect to the container directly when running.
 # For direct SSH connections, specify
 # SSH_USERNAME=root
 # then copy the id_rsa.pub file to the ./shared directory

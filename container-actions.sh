@@ -156,8 +156,7 @@ else
     echo "Running container because it is not yet running: $(./status.sh)"
     # ${C_EXTRA_ARG}
     docker run -dt \
-      --name=${CONTAINER_NAME} \
-      -p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432 \
+      --name=${CONTAINER_NAME} ${MAPPED_PORTS} \
       --device /dev/fuse \
       --cap-add SYS_ADMIN \
       consected/restructure-test
@@ -175,6 +174,5 @@ else
     done
 
     ./container-actions.sh $(args_excluding 'clean')
-    # --volume="$(pwd)/shared:/shared" --volume="$(pwd)/output:/output" \
   fi
 fi
