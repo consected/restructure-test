@@ -19,6 +19,7 @@
 
 cd -P -- "$(dirname -- "$0")"
 script_args="$@"
+source shared/build-vars.sh
 
 function has_arg() {
   for i in ${script_args}; do
@@ -31,13 +32,7 @@ function has_arg() {
 }
 
 function args_excluding() {
-  local new_args=''
-  for i in ${script_args}; do
-    if ! [[ "${i}" == +($1) ]]; then
-      new_args="${new_args}${i} "
-    fi
-  done
-  echo ${new_args}
+  echo ${script_args} | sed 's/\b'$1'\b//g'
 }
 
 if ! groups | grep -q '\bdocker\b'; then
