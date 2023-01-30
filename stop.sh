@@ -1,4 +1,5 @@
 #!/bin/bash
 # Simply stop the running container
-echo "Stopping container"
-docker container stop restructure-test
+CONTAINER_NAME=${USER}-restructure-test
+echo "Stopping container: ${CONTAINER_NAME}"
+docker container stop ${CONTAINER_NAME}

@@ -21,6 +21,8 @@ cd -P -- "$(dirname -- "$0")"
 script_args="$@"
 source shared/build-vars.sh
 
+CONTAINER_NAME=${USER}-restructure-test
+
 function has_arg() {
   for i in ${script_args}; do
     if [ "$1" == "${i}" ]; then
@@ -74,7 +76,7 @@ fi
 if has_arg 'clean' || has_arg 'clean-only'; then
   echo 'Clean has been requested - will start in 5 seconds - Ctrl-C to exit now'
   sleep 5
-  docker container rm restructure-test --force
+  docker container rm ${CONTAINER_NAME} --force
   docker image rm consected/restructure-test --force
   sleep 5
 
@@ -130,7 +132,7 @@ else
     if [ "${STATUS}" == 'stopped' ]; then
       # A container exists but is not started: we must start it
       echo "Starting container"
-      docker container start restructure-test
+      docker container start ${CONTAINER_NAME}
 
       while [ "$(./status.sh)" == 'stopped' ]; do
         sleep 2
@@ -141,10 +143,10 @@ else
     # In the running container, execute a command if one has been specified, otherwise just attach to the container
     if [ "${C_CMD}" ]; then
       echo "Executing command in running container: ${C_EXTRA_ARG} ${C_CMD}"
-      docker exec -i ${C_EXTRA_ARG} restructure-test ${C_CMD}
+      docker exec -i ${C_EXTRA_ARG} ${CONTAINER_NAME} ${C_CMD}
     else
       echo "Attaching to running container"
-      docker attach restructure-test
+      docker attach ${CONTAINER_NAME}
     fi
 
   fi
@@ -154,7 +156,7 @@ else
     echo "Running container because it is not yet running: $(./status.sh)"
     # ${C_EXTRA_ARG}
     docker run -dt \
-      --name=restructure-test \
+      --name=${CONTAINER_NAME} \
       -p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432 \
       --device /dev/fuse \
       --cap-add SYS_ADMIN \

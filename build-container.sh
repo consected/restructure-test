@@ -7,7 +7,7 @@ source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
 
-echo "**** Building restructure-test container ****"
+echo "**** Building consected/restructure-test container ****"
 
 if [ -z ${PGSQL_DATA_DIR} ]; then
   echo 'PGSQL_DATA_DIR not set. Probably failed to load setup-dev-env.sh'
