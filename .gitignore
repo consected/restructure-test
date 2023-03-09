@@ -2,7 +2,9 @@ shared/build-vars.sh
 shared/build_version.txt
 .pytest_cache
 .netrc
+id_rsa*
 output/*
 output/.*
 !output/.keep
 *-secrets
+.vscode/*

@@ -3,10 +3,14 @@ FROM amazonlinux:2
 LABEL maintainer=phil.ayres@consected.com
 
 COPY build-container.sh /root/build-container.sh
+COPY shared/run-dev.sh /shared/run-dev.sh
 COPY shared/build-vars.sh /shared/build-vars.sh
 COPY shared/.netrc /root/.netrc
+COPY shared/setup-dev-env.sh /shared/setup-dev-env.sh
+COPY shared/test-restructure.sh /shared/test-restructure.sh
+COPY shared/check-config.sh /shared/check-config.sh
 
-RUN cd /root; chmod 600 /root/.netrc; /root/build-container.sh
+RUN /root/build-container.sh
 
-CMD ["/shared/test-restructure.sh"]
+CMD /shared/check-config.sh
 
