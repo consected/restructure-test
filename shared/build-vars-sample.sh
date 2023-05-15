@@ -1,4 +1,4 @@
-RUBY_V=2.7.6
+RUBY_V=3.0.6
 GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
 REPO_URL="https://github.com/somerepo"
