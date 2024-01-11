@@ -34,7 +34,8 @@ echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 /usr/sbin/sshd
 
 curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
-curl --silent --location https://rpm.nodesource.com/setup_14.x | bash -
+yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
+yum install nodejs -y --setopt=nodesource-nodejs.module_hotfixes=1
 
 amazon-linux-extras
 
@@ -43,7 +44,13 @@ yum install -y git yarn \
   openssl-devel readline-devel zlib-devel \
   gcc gcc-c++ make which mlocate \
   tar bzip2 \
-  words procps-ng
+  words procps-ng \
+  unzip libyaml libyaml-devel
+
+if [ $? != 0 ]; then
+  echo 'Failed to install main packages'
+  exit 7
+fi
 
 amazon-linux-extras enable postgresql${PGVER} vim epel
 yum clean metadata
