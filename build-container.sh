@@ -44,7 +44,13 @@ yum install -y git yarn \
   openssl-devel readline-devel zlib-devel \
   gcc gcc-c++ make which mlocate \
   tar bzip2 \
-  words procps-ng
+  words procps-ng \
+  unzip libyaml libyaml-devel
+
+if [ $? != 0 ]; then
+  echo 'Failed to install main packages'
+  exit 7
+fi
 
 amazon-linux-extras enable postgresql${PGVER} vim epel
 yum clean metadata

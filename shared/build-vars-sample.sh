@@ -1,16 +1,13 @@
 RUBY_V=3.2.5
 GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
-REPO_URL="https://github.com/somerepo"
-DOCS_REPO_URL="https://github.com/somerepo_for_docs"
-# For example, to test the consected/restructure repo
+REPO_URL="https://github.com/yourorg/restructure"
+DOCS_REPO_URL="https://github.com/yourorg/restructure-docs"
+APPS_REPO_URL="https://github.com/yourorg/restructure-apps"
+# For example, to build the consected/restructure repo
 # REPO_URL="https://github.com/consected/restructure"
 # DOCS_REPO_URL="https://github.com/consected/restructure-docs"
-
-# If running as a development container, specify the follow repo
-# APPS_REPO_URL=https://github.com/somerepo_for_apps
-# For example:
-# APPS_REPO_URL=https://github.com/consected/restructure-apps.git
+# APPS_REPO_URL="https://github.com/consected/restructure-apps"
 
 # To map specific container ports:
 # MAPPED_PORTS=-p 127.0.0.1:2022:22 -p 127.0.0.1:13000:3000 -p 127.0.0.1:15432:5432
