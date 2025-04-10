@@ -1,4 +1,4 @@
-RUBY_V=3.2.5
+RUBY_V=3.4.2
 GIT_EMAIL=youremail
 TEST_GIT_BRANCH=develop
 REPO_URL="https://github.com/yourorg/restructure"
