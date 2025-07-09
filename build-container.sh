@@ -2,6 +2,10 @@
 # Setup the build container with
 #    docker build . --no-cache -t consected/restructure-test
 
+
+PGVER=15
+NODEJS_VERSION=23
+
 ls -als /shared
 source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
@@ -34,18 +38,15 @@ echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config
 /usr/sbin/sshd
 
 curl --silent --location https://dl.yarnpkg.com/rpm/yarn.repo | tee /etc/yum.repos.d/yarn.repo
-yum install https://rpm.nodesource.com/pub_16.x/nodistro/repo/nodesource-release-nodistro-1.noarch.rpm -y
-yum install nodejs -y --setopt=nodesource-nodejs.module_hotfixes=1
-
-amazon-linux-extras
-
+curl -fsSL https://rpm.nodesource.com/setup_${NODEJS_VERSION}.x -o nodesource_setup.sh && \
+bash nodesource_setup.sh && \
+yum install -y nodejs && node -v && \
 yum install -y git yarn \
-  llvm-toolset-7-clang \
   openssl-devel readline-devel zlib-devel \
   gcc gcc-c++ make which mlocate \
+  libffi libffi-devel libyaml libyaml-devel rsync sudo \
   tar bzip2 \
-  words procps-ng \
-  unzip libyaml libyaml-devel
+  words unzip
 
 if [ $? != 0 ]; then
   echo 'Failed to install main packages'
