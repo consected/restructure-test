@@ -132,7 +132,10 @@ if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
   echo "Cloning repo"
   rm -rf ${BUILD_DIR}
   cd $(dirname ${BUILD_DIR})
-  git clone ${REPO_URL} ${BUILD_DIR}
+  # git clone ${REPO_URL} ${BUILD_DIR}
+
+  . /shared/setup_repos.sh
+
   git stash save .ruby-version
   git checkout ${TEST_GIT_BRANCH} || git checkout -b ${TEST_GIT_BRANCH} --track origin/${TEST_GIT_BRANCH}
 
@@ -176,14 +179,8 @@ fi
 
 if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
   cd $(dirname ${DOCS_BUILD_DIR})
-  echo "Cloning docs repo"
-  rm -rf ${DOCS_BUILD_DIR}
-  cd $(dirname ${DOCS_BUILD_DIR})
-  git clone ${DOCS_REPO_URL} ${DOCS_BUILD_DIR}
-  if [ ! -f ${DOCS_BUILD_DIR}/.git/HEAD ]; then
-    echo "Failed to get the docs repo"
-    exit 8
-  fi
+  echo "No docs repo - clean to reset all repos"  
+  exit 8  
 else
   echo "Pulling from docs repo"
   cd ${DOCS_BUILD_DIR}
@@ -200,17 +197,17 @@ echo "Creating Filestore"
 app-scripts/setup-init-mounts.sh
 if [ $? != 0 ]; then
   echo "Failed to initialize mounts"
-  exit 9
+  FAILURE=9
 fi
 RAILS_ENV= app-scripts/setup-dev-filestore.sh
 if [ $? != 0 ]; then
   echo "Failed to setup dev filestore"
-  exit 9
+  FAILURE=10
 fi
 SUBDIR=test-fphsfs app-scripts/setup_filestore_app.sh 1
 if [ $? != 0 ]; then
   echo "Failed to setup filestore app 1"
-  exit 9
+  FAILURE=11
 fi
 
 if [ "${NO_TEST}" ]; then
@@ -313,6 +310,10 @@ if [ -z ${NO_TEST} ]; then
     echo "rspec Failed"
     exit 1
   fi
+fi
+
+if [ "$FAILURE" ]; then
+  echo "Failure ${FAILURE} setting up Filestore mounts"
 fi
 
 echo 'Exiting test-restructure.sh'

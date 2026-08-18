@@ -51,7 +51,7 @@ To run the parallel test suite within the dev container:
 ---
 Continuing with bash to keep the container running
 Connect to the container directly with VSCode, or another IDE via SSH (see the build-vars.sh)
-Run `exit` (or Ctrl-D) to close the container
+Run \`exit\` (or Ctrl-D) to close the container
 ---
 EOF
 
