@@ -8,6 +8,9 @@ COPY shared/build-vars.sh /shared/build-vars.sh
 COPY shared/default-ruby-version.sh /shared/default-ruby-version.sh
 COPY shared/.netrc /root/.netrc
 COPY shared/setup-dev-env.sh /shared/setup-dev-env.sh
+COPY shared/setup_repos.sh /shared/setup_repos.sh
+COPY shared/lib/rbenv.sh /shared/lib/rbenv.sh
+COPY shared/lib/git-config.sh /shared/lib/git-config.sh
 COPY shared/test-restructure.sh /shared/test-restructure.sh
 COPY shared/check-config.sh /shared/check-config.sh
 COPY shared/setup_restructure_eb.sh /shared/setup_restructure_eb.sh

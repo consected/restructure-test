@@ -47,12 +47,6 @@ function save_config() {
 
 cd ${RE_ROOT}
 
-if [ -f restructure-build/shared/build-vars.sh ]; then
-  mv -f restructure-build/shared/build-vars.sh .
-  source ./build-vars.sh
-  moved_build_vars=1
-fi
-
 cd ${SCRIPT_DIR}
 
 get_config GIT_EMAIL
@@ -100,7 +94,7 @@ sudo chmod o+rwx,g+rwx ${RE_ROOT}
 cd ${RE_ROOT}
 
 # Run each line in turn and enter github credentials where requested
-for r in restructure restructure-build restructure-apps restructure-docs env-setup; do
+for r in restructure restructure-apps restructure-docs; do
   sudo rm -rf ${r}
   git clone ${GH_BASEURL}/${r}.git
   sudo chgrp --recursive ${ADMIN_GRP} ${r}

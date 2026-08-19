@@ -3,6 +3,7 @@
 source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
+source /shared/lib/git-config.sh
 
 echo "**** Running test-restructure - $@ ****"
 
@@ -119,14 +120,7 @@ fi
 # Get source
 
 cd $(dirname ${BUILD_DIR})
-git config --global user.email ${GIT_EMAIL}
-git config --global user.name "Restructure TEST Process"
-git config --global push.default matching
-git config --global http.postBuffer 500M
-git config --global http.maxRequestBuffer 100M
-git config --global https.postBuffer 500M
-git config --global https.maxRequestBuffer 100M
-git config --global core.compression 0
+configure_git_for_build "Restructure TEST Process"
 
 if [ ! -f ${BUILD_DIR}/.git/HEAD ]; then
   echo "Cloning repo"

@@ -1,12 +1,13 @@
 #!/bin/bash
 # Setup the build container with
-#    docker build . --no-cache -t consected/restructure-build
+#    docker build . --no-cache -t consected/restructure-test
 
 # set -xv
 source /shared/default-ruby-version.sh
 source /shared/build-vars.sh
 source /shared/setup-dev-env.sh
 source $HOME/.bash_profile
+source /shared/lib/rbenv.sh
 
 export HOME=/root
 
@@ -76,32 +77,6 @@ tar -xvf geckodriver.tar.gz
 mv geckodriver /usr/local/bin/
 chmod 777 /usr/local/bin/geckodriver
 
-
-# Install rbenv
-git clone https://github.com/rbenv/rbenv.git ${HOME}/.rbenv
-${HOME}/.rbenv/bin/rbenv init
-echo 'eval "$(rbenv init -)"' >> ${HOME}/.bash_profile
-export PATH="$HOME/.rbenv/bin:$HOME/.rbenv/shims:$PATH"
-eval "$(rbenv init -)"
-. /root/.bash_profile
-#curl -fsSL https://github.com/rbenv/rbenv-installer/raw/master/bin/rbenv-doctor | bash
-mkdir -p "$(rbenv root)"/plugins
-git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)"/plugins/ruby-build
-rbenv install --list
-rbenv install --skip-existing ${RUBY_V}
-rbenv rehash
-
-# Install ruby, etc
-if [ "$(rbenv local)" != "${RUBY_V}" ]; then
-  echo "Installing new ruby version ${RUBY_V}"
-  git -C /root/.rbenv/plugins/ruby-build pull && \
-  rbenv install --skip-existing ${RUBY_V} && \
-  rbenv global ${RUBY_V} && \
-  rbenv local ${RUBY_V} && \
-  gem install bundler
-  if [ $? != 0 ] || [ "$(rbenv local)" != "${RUBY_V}" ]; then
-    echo "Failed to install new ruby version ${RUBY_V} and bundler gem"
-    rbenv local
-    exit 18
-  fi
-fi
+install_rbenv
+ensure_ruby_version "${RUBY_V}"
+gem install bundler

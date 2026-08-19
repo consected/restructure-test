@@ -117,6 +117,21 @@ To clean and rebuild, run:
 
      ./clean.sh rebuild
 
+## Shared lib scripts
+
+`shared/lib/rbenv.sh` and `shared/lib/git-config.sh` are vendored (copied, not symlinked or
+submoduled) from [restructure-ops](https://github.com/consected/restructure-ops)'s
+`shared/lib/` - that repo is the canonical source. Do not edit these files directly; if
+restructure-ops changes them, refresh this repo's copies with:
+
+    ./sync-ops-lib.sh [path-to-restructure-ops]
+
+(defaults to `../restructure-ops` if no path is given). Review the diff and commit as normal.
+
+restructure-ops's `shared/lib/repo-setup.sh` is *not* vendored here - it assumes an ephemeral,
+always-fresh-clone build pipeline that doesn't fit this repo's persistent
+checkout-once-then-`git pull` container model.
+
 ## License
 
 BSD 3-Clause License
